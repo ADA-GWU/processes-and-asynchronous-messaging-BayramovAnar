@@ -4,24 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"shared"
 	"time"
 )
 
-type Message struct {
-	senderName  string
-	messageText string
-	timeStamp   time.Time
-}
-
-const (
-	dbHost     = ""
-	dbPort     = 8081
-	dbUser     = "anar"
-	dbPassword = ""
-	dbName     = "template1"
-)
-
-func getAvailableMessagesFromDB(db *sql.DB, dbServer string) []Message {
+func getAvailableMessagesFromDB(db *sql.DB, dbServer string) []shared.Message {
 	query := "SELECT SENDER_NAME, MESSAGE_TEXT, TIMESTAMP FROM ASYNC_MESSAGE WHERE RECEIVED_TIME IS NULL AND SENDER_NAME != $1"
 	rows, err := db.Query(query, "Anar")
 	if err != nil {
@@ -29,9 +16,9 @@ func getAvailableMessagesFromDB(db *sql.DB, dbServer string) []Message {
 	}
 	defer rows.Close()
 
-	var messages []Message
+	var messages []shared.Message
 	for rows.Next() {
-		var message Message
+		var message shared.Message
 		if err := rows.Scan(&message.senderName, &message.messageText, &message.timeStamp); err != nil {
 			log.Printf("Failed to scan message: %v", err)
 			continue
@@ -41,7 +28,7 @@ func getAvailableMessagesFromDB(db *sql.DB, dbServer string) []Message {
 	return messages
 }
 
-func markMessageAsReceived(db *sql.DB, message Message) {
+func markMessageAsReceived(db *sql.DB, message shared.Message) {
 	query := "UPDATE ASYNC_MESSAGE SET RECEIVED_TIME = $1 WHERE SENDER_NAME = $2 AND MESSAGE_TEXT = $3"
 	_, err := db.Exec(query, time.Now(), message.senderName, message.messageText)
 	if err != nil {
@@ -50,7 +37,7 @@ func markMessageAsReceived(db *sql.DB, message Message) {
 }
 
 func main() {
-	dbInfo := fmt.Sprintf("host=%s port=%d user=%s password = %s dbname=%s sslmode=disablet", dbHost, dbPort, dbUser, dbPassword, dbName)
+	dbInfo := fmt.Sprintf("host=%s port=%d user=%s password = %s dbname=%s sslmode=disablet", shared.dbHost, shared.dbPort, shared.dbUser, shared.dbPassword, shared.dbName)
 	db, err := sql.Open("postgres", dbInfo)
 
 	if err != nil {
