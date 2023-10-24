@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"processes-and-asynchronous-messaging-BayramovAnar/shared"
 	"sync"
 	"time"
+
+	"../shared"
 )
 
 func insetMessageToDB(db *sql.DB, message shared.Message) {
