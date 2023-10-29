@@ -1,57 +1,53 @@
 package main
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"time"
 
-	"../shared"
+	_ "github.com/lib/pq"
 )
 
-func insetMessageToDB(db *sql.DB, message shared.Message) {
-	query := "INSERT INTO ASYNC_MESSAGE (SENDER_NAME, MESSAGE_TEXT, TIMESTAMP) VALUES ($1, $2, $3)"
-	_, err := db.Exec(query, message.senderName, message.messageText, message.timeStamp)
-	if err != nil {
-		log.Fatalf("Failed to insert a message: %v", err)
-	}
-}
-
 func main() {
-	dbInfo := fmt.Sprintf("host=%s port=%d user=%s password = %s dbname=%s sslmode=disable", shared.dbHost, shared.dbPort, shared.dbPassword, shared.dbName)
-	db, err := sql.Open("postgres", dbInfo)
+	connectionString := "user=anar dbname=message_db sslmode=disable"
+	db, err := sql.Open("postgres", connectionString)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	if err = db.Ping(); err != nil {
-		log.Fatal("Failed to connect to the database: %v", err)
-	}
-
-	dbServers := []string{"DBServer1", "DBServer2", "DBServer3"}
-
+	var serverIPs = []string{"db1"}
 	var wg sync.WaitGroup
 
-	for _, dbServer := range dbServers {
+	for _, serverIP := range serverIPs {
 		wg.Add(1)
-
-		go func(server string) {
+		go func(serverIP string) {
 			defer wg.Done()
 			for {
-				var messageText string
-				fmt.Printf("Enter a message to send to %s: ", server)
-				fmt.Scanln(&messageText)
+				var senderName, message string
+				var reader = bufio.NewReader(os.Stdin)
 
-				message := shared.Message{
-					senderName:  "Anar",
-					messageText: messageText,
-					timeStamp:   time.Now(),
+				fmt.Printf("Enter your name: ")
+				senderName, _ = reader.ReadString('\n')
+				senderName = senderName[:len(senderName)-1]
+
+				fmt.Printf("Enter message: ")
+				message, _ = reader.ReadString('\n')
+				message = message[:len(message)-1]
+
+				sentTime := time.Now()
+				_, err := db.Exec(`INSERT INTO ASYNC_MESSAGE (SENDER_NAME, MESSAGE, MESSAGE_TIME) VALUES ($1, $2, $3)`, senderName, message, sentTime.Format("2006-01-02 15:04:05"))
+				if err != nil {
+					log.Println("Can't send a message: ", err)
 				}
-				insetMessageToDB(db, message)
 			}
-		}(dbServer)
+		}(serverIP)
 	}
+
 	wg.Wait()
 }
