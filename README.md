@@ -14,5 +14,6 @@
 **RECEIVED_TIME TIMESTAMP);** <br>
 
 5. Go to the terminal and do the following, as shown in the GIF below. <br>
+6. In both **sender.go** and **reader.go** change the values of **connectionString := "user=anar dbname=message_db sslmode=disable"** to whatever your database called and your username. <br>
 
 ![Video to GIF](https://github.com/ADA-GWU/processes-and-asynchronous-messaging-BayramovAnar/assets/98649599/ad9250b2-b630-414a-af7d-3b6385aaa7ac)
